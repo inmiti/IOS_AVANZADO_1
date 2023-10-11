@@ -10,10 +10,10 @@ import UIKit
 // MARK: - View Protocol -
 protocol LoginViewControllerDelegate {
     var viewState: ((LoginViewState) -> Void)? { get set }
-    func onLoginPressed(email: String?, password: String?)
+    func onLoginPressed(email: String?, password: String?) // Funcion que notifica al model que se ha pulsado el boton de login
 }
 
-// MARK: - Login State -
+// MARK: - View State -
 enum LoginViewState {
     case loading(_ isLoading: Bool)
     case showErrorEmail(_ error: String?)
@@ -33,20 +33,17 @@ class LoginViewController: UIViewController {
     
     // MARK: - IBAction -
     @IBAction func onLoginPressed(_ sender: Any) {
-        //Obtener el email y password introducidos
+        //Obtener el email y password introducidos por el usuario
         // Enviarlos al servicio del API de login
         
         viewModel?.onLoginPressed(
             email: emailField.text,
             password: passwordField.text)
     }
-    // MARK: - Public Properties _
+    // MARK: - Public Properties -
     var viewModel: LoginViewControllerDelegate?
     
-    private enum FieldType: Int {
-        case email = 0
-        case password
-    }
+    
     
     // MARK: - Lifecycle -
     override func viewDidLoad() {
@@ -56,40 +53,50 @@ class LoginViewController: UIViewController {
         // Do any additional setup after loading the view.
     }
     
+    // MARK: - Private Properties -
+    private enum FieldType: Int {
+        case email = 0
+        case password
+    }
+    
     private func initViews() {
-        emailField.delegate = self
+        emailField.delegate = self  //delegado que responde ante los mensajes introducidos por el usuario. Detecta cuando el usuario empieza a escribir y así podemos ocultar los mensajes de error.
         emailField.tag = FieldType.email.rawValue
         passwordField.delegate = self
         passwordField.tag = FieldType.password.rawValue
         
-        view.addGestureRecognizer(
+        view.addGestureRecognizer( // detecta cuando se toca la pantalla para que oculte el teclado
             UITapGestureRecognizer(
-                target: self,
-                action: #selector(dismissKeyboard)))
+                target: self, // el target se refiere a la vista self, al loginView
+                action: #selector(dismissKeyboard) //la funcion que se ejecuta cuando hacemos tap en el loginView
+            )
+        )
     }
     
-    @objc func dismissKeyboard() {
+    @objc func dismissKeyboard() {  //funcion para que se oculte el teclado
         view.endEditing(true)
     }
     
     private func setObservers() {
         viewModel?.viewState = { [weak self] state in
-            switch state {
-            case .loading(let isLoading):
-                self?.loadingView.isHidden = !isLoading
-                
-            case .showErrorEmail(let error):
-                self?.emailFieldError.text = error
-                self?.emailFieldError.isHidden = (error == nil || error?.isEmpty == true)
-                
-            case .showErrorPassword(let error):
-                self?.passwordFieldError.text = error
-                self?.passwordFieldError.isHidden = (error == nil || error?.isEmpty == true)
-                
-            case .navigateToNext:
-                self?.loadingView.isHidden = true
+            DispatchQueue.main.async {
+                switch state {
+                    case .loading(let isLoading):
+                        self?.loadingView.isHidden = !isLoading
+                        
+                    case .showErrorEmail(let error):
+                        self?.emailFieldError.text = error
+                        self?.emailFieldError.isHidden = (error == nil || error?.isEmpty == true)
+                        
+                    case .showErrorPassword(let error):
+                        self?.passwordFieldError.text = error
+                        self?.passwordFieldError.isHidden = (error == nil || error?.isEmpty == true)
+                        
+                    case .navigateToNext:
+                        self?.loadingView.isHidden = true
+                    // Navegar a la siguiente vista
+                }
             }
-            
         }
     }
 }
