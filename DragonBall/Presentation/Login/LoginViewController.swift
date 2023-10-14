@@ -78,11 +78,11 @@ class LoginViewController: UIViewController {
     }
     
     private func setObservers() {
-        viewModel?.viewState = { [weak self] state in
+        viewModel?.viewState = { [weak self] state in  //ViewModel envia el estado a la vista, y según eso la vista ejectuará una lógica u otra.
             DispatchQueue.main.async {
                 switch state {
                     case .loading(let isLoading):
-                        self?.loadingView.isHidden = !isLoading
+                        self?.loadingView.isHidden = !isLoading  // si es false se oculta la vista
                         
                     case .showErrorEmail(let error):
                         self?.emailFieldError.text = error
@@ -93,7 +93,7 @@ class LoginViewController: UIViewController {
                         self?.passwordFieldError.isHidden = (error == nil || error?.isEmpty == true)
                         
                     case .navigateToNext:
-                        self?.loadingView.isHidden = true
+                        self?.loadingView.isHidden = true //cuando vayamos a la siguiente vista nos aseguramos de que la vista se oculta, para evitar posibles fallos.
                     // Navegar a la siguiente vista
                 }
             }

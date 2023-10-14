@@ -24,8 +24,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         )
         
         window = UIWindow(windowScene: windowScene)
+        // Lo ponemos como principal en la vista y lo incluimos en un navigationController para luego poder hacer push
         window?.rootViewController = UINavigationController(rootViewController: rootViewController ?? UIViewController())
-        window?.makeKeyAndVisible()
+        window?.makeKeyAndVisible() // hacer la window visible.
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
