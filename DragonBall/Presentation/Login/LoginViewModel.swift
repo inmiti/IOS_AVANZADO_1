@@ -7,88 +7,82 @@
 
 import Foundation
 
-
 class LoginViewModel: LoginViewControllerDelegate {
-    
+
     // MARK: - Dependencies -
     private let apiProvider: ApiProviderProtocol
     private let secureDataProvider: SecureDataProviderProtocol
-    
-    //MARK: - Properties
+
+    // MARK: - Properties -
     var viewState: ((LoginViewState) -> Void)?
-    
-    //MARK: - Initializers -
+
+    // MARK: - Initializers -
     init(
         apiProvider: ApiProviderProtocol,
         secureDataProvider: SecureDataProviderProtocol) {
             self.apiProvider = apiProvider
             self.secureDataProvider = secureDataProvider
-            
+
             NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(onLoginResponse),
                 name: NotificationCenter.apiLoginNotification,
                 object: nil)
-            
         }
-    
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
-    
+
     // MARK: - Public Functions -
     func onLoginPressed(email: String?, password: String?) {
-        viewState?(.loading(true)) //Mostrar vista de carga, se deja en el hilo principal
-        
-        DispatchQueue.global().async {  // Lo enviamos a segundo plano, no tiene sentido esto meterlo en el hilo principal. En este caso no tiene sentido hacer weak self pq será un tiempo corto, no es tan crítico, podría añadirse por seguridad.
+        viewState?(.loading(true)) // Mostrar vista de carga, se deja en el hilo principal
+        DispatchQueue.global().async {
             guard self.isValid(email: email) else {
-                self.viewState?(.loading(false))  //deja de mostrar la carga. Hemos indicado main en el setObserver
+                self.viewState?(.loading(false))  // deja de mostrar la carga. Hemos indicado main en el setObserver
                 self.viewState?(.showErrorEmail("Indique un email válido")) // muestra mensaje de error
                 return
             }
+
             guard self.isValid(password: password) else {
                 self.viewState?(.loading(false))
                 self.viewState?(.showErrorEmail("Indique un password válido"))
                 return
             }
-            
+
             self.doLoginWith(
                 email: email ?? "",
                 password: password ?? ""
             )
         }
-        
-    }
-    
-    @objc func onLoginResponse(_ notification: Notification) {  //Funcion que se ejecutará cuando notifique 
+}
+
+    @objc func onLoginResponse(_ notification: Notification) {  // Funcion que se ejecutará cuando notifique 
         // Pasear resultado que vendrá en notification.userInfo.
-        print("LoginViewModel onloginResponse: \(notification)")
-//        defer {
-//            viewState?(.loading(false))  // se ejecuta al final de la funcion, para aquellos casos donde hay que realizarlo en varios sitios
-//        }
+        defer {
+            viewState?(.loading(false)) // deja de mostar el loading
+        }
+
 //      //Accedemos al token, nos aseguramos de que haya token y no esté vacío. Es de tipo any, hay que castearlo a string.
         guard let token = notification.userInfo?[NotificationCenter.tokenKey] as? String,
               !token.isEmpty else {
             return
         }
-        secureDataProvider.save(token: token) //guardamos el token en el keychain
-        viewState?(.loading(true)) // deja de mostar el loading
+        secureDataProvider.save(token: token) // guardamos el token en el keychain
         viewState?(.navigateToNext) // navega a la siguiente pantalla
-        
     }
+
     // MARK: - Private functions -
     private func isValid(email: String?) -> Bool {
         email?.isEmpty == false && email?.contains("@") ?? false
     }
-    
+
     private func isValid(password: String?) -> Bool {
         password?.isEmpty == false && (password?.count ?? 0) >= 4
-        
     }
-    
+
     private func doLoginWith(email: String, password: String) {
         apiProvider.login(for: email,
                           with: password)
     }
 }
-
